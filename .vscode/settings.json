@@ -1,0 +1,6 @@
+{
+    "python.pythonPath": "/home/theodor/progs/Python/projects1/envs/redis-api/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "restructuredtext.confPath": ""
+}

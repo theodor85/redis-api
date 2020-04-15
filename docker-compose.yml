@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+    django:
+        build:
+            context: .
+            dockerfile: ./compose/django/Dockerfile
+        depends_on:
+            - redis
+        volumes:
+            - ./app:/app
+        env_file:
+            - ./envs/django
+        ports:
+            - "8000:8000"
+        command: /start
+
+    redis:
+        image: redis:5.0
