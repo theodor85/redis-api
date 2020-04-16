@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import redis
@@ -6,11 +7,14 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
 
+from .business_logic.links_saver import save_links
+
+
 # Connect to our Redis instance
 redis_instance = redis.StrictRedis(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
-    db=0,
+    db=settings.REDIS_MAIN_DB,
 )
 
 
@@ -28,3 +32,18 @@ def all_items(request):
             'items': items
         }
         return Response(response, status=200)
+
+
+@api_view(['POST'])
+def visited_links(request, *args, **kwargs):
+    print('************************************')
+    print(request.body)
+    
+    
+    data = json.loads( request.body )
+    
+    
+    
+    save_links(data["links"], datetime.datetime.now(), redis_instance)
+    response = {"status": "ok"}
+    return Response(response, status=201)

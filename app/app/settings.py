@@ -125,3 +125,5 @@ STATIC_URL = '/static/'
 # redis
 REDIS_HOST = 'redis'
 REDIS_PORT = 6379
+REDIS_MAIN_DB = 0
+REDIS_TEST_DB = 1
