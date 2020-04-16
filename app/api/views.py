@@ -36,14 +36,7 @@ def all_items(request):
 
 @api_view(['POST'])
 def visited_links(request, *args, **kwargs):
-    print('************************************')
-    print(request.body)
-    
-    
-    data = json.loads( request.body )
-    
-    
-    
-    save_links(data["links"], datetime.datetime.now(), redis_instance)
+    data = json.loads( request.body.decode("utf-8").replace("\'", "\"") )
+    save_links(data["links"], datetime.datetime(2020, 4, 16, 12, 0, 0), redis_instance)
     response = {"status": "ok"}
     return Response(response, status=201)

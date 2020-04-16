@@ -29,15 +29,19 @@ def api_client():
 
 def test_post_links(api_client):
     url = reverse('api:visited_links')
-    request_time = datetime.datetime.now()
-    response = api_client.post(url, {
-        "links": [
-           "https://ya.ru",
-           "https://ya.ru?q=123",
-           "funbox.ru",
-           "https://stackoverflow.com/questions/11828270/how-to-exit-the-vim-editor",
-        ]
-    })
+    request_time = datetime.datetime(2020, 4, 16, 12, 0, 0) #datetime.datetime.now()
+    response = api_client.post(
+        url,
+        data={
+            "links": [
+                "https://ya.ru",
+                "https://ya.ru?q=123",
+                "funbox.ru",
+                "https://stackoverflow.com/questions/11828270/how-to-exit-the-vim-editor",
+            ]
+        },
+        content_type='application/json',
+    )
 
     assert response.status_code == 201
     check_saved_links_in_redis(request_time)
@@ -70,4 +74,5 @@ def test_save_links(api_client):
     save_links(data, timestamp, redis_instance)
 
     check_saved_links_in_redis(timestamp)
-
+    
+    redis_instance.flushdb()
