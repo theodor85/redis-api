@@ -5,6 +5,7 @@ import redis
 
 from django.urls import reverse
 from django.conf import settings
+from django.utils import timezone
 
 from .business_logic.links_saver import save_links
 
@@ -12,7 +13,7 @@ from .business_logic.links_saver import save_links
 redis_instance = redis.StrictRedis(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
-    db=settings.REDIS_TEST_DB,
+    db=settings.REDIS_DB_NUMBER,
 )
 
 
@@ -22,14 +23,22 @@ def api_client():
     return APIClient()
 
 
-# def test_get_all(api_client):
-#     url = reverse('api:all_items')
-#     response = api_client.get(url)
-#     assert response.status_code == 200
+def test_get_all(api_client):
+    url = reverse('api:all_items')
+    response = api_client.get(url)
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Testing "visited_links" endpoint
+
 
 def test_post_links(api_client):
+    redis_instance.flushdb()
+    
     url = reverse('api:visited_links')
-    request_time = datetime.datetime(2020, 4, 16, 12, 0, 0) #datetime.datetime.now()
+    tz = timezone.get_default_timezone()
+    request_time = datetime.datetime.now(tz=tz)
     response = api_client.post(
         url,
         data={
@@ -63,7 +72,7 @@ def check_saved_links_in_redis(timestamp):
 
 
 def test_save_links(api_client):
-
+    redis_instance.flushdb()
     data = [
         "https://ya.ru",
         "https://ya.ru?q=123",
@@ -75,4 +84,42 @@ def test_save_links(api_client):
 
     check_saved_links_in_redis(timestamp)
     
+    redis_instance.flushdb()
+
+
+# ---------------------------------------------------------------------------
+# Testing "visited_domains" endpoint
+
+
+def test_get_visited_domains(api_client):
+    redis_instance.flushdb()
+    
+    # первый тестовый список доменов
+    timestamp1 = datetime.datetime(2020, 4, 16, 12, 0, 0)
+    key1 = timestamp1.isoformat().split('.')[0]
+    links_list = [
+        "ya.ru",
+        "mail.ru",
+    ]
+    redis_instance.lpush(key1, *links_list)
+
+    # второй тестовый список доменов через 5 секунд
+    timestamp2 = datetime.datetime(2020, 4, 16, 12, 0, 5)
+    key2 = timestamp2.isoformat().split('.')[0]
+    links_list = [
+        "stackoverflow.com",
+        "funbox.ru",
+    ]
+    redis_instance.lpush(key2, *links_list)
+
+    url = reverse('api:visited_domains')
+    response = api_client.get(url, {'from': key1, 'to': key2})
+    domains = response.json()["domains"]
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    # множества должны быть одинаковыми, поэтому ^ даст пустое множество
+    xor_set = set(domains) ^ set(["ya.ru","stackoverflow.com", "funbox.ru", "mail.ru"])
+    assert bool(xor_set) == False
+
     redis_instance.flushdb()

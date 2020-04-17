@@ -6,3 +6,5 @@ DATABASES = {
         'NAME': ':memory:'
     }
 }
+
+REDIS_DB_NUMBER = 1

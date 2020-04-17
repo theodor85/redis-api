@@ -108,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -125,5 +125,4 @@ STATIC_URL = '/static/'
 # redis
 REDIS_HOST = 'redis'
 REDIS_PORT = 6379
-REDIS_MAIN_DB = 0
-REDIS_TEST_DB = 1
+REDIS_DB_NUMBER = 0
