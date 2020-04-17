@@ -1,34 +1,52 @@
+'''
+    Модуль содержит класс DomainGetter, который отдаёт список доменов, 
+    посещенных за заданный временной промежуток
+'''
+
 import datetime
 import re
 
 
-def get_domains(from_: str, to: str, redis_instance):
+class DomainGetter:
     '''
         from_, to:  строка вида "2020-04-16T11:39:10". 
                 Такую строку можно получить так: datetime_variable.isoformat().split('.')[0],
                 т.е. путем отрезания миллисекунд от isoformat
+        Пример использования:
+            response = DomainGetter(from_, to, redis_instance).get()
+    
+        Возвращает словарь {"status": "ok"}, если нет ошибок. 
+        Если ошибки есть, {"status": "warning", description: "описание"} 
+        или {"status": "error", description: "описание"} 
     '''
-    domains = list()
-    result = {
-        "domains": domains,
-    }
+    def __init__(self, from_: str, to: str, redis_instance):
+        self.from_ = from_
+        self.to = to
+        self.redis_instance = redis_instance
+        self.response = {"status": "ok"}
+    
+    def get(self):
+        domains = list()
+        self.response.update({
+                "domains": domains,
+        })
+        self.try_to_get_values_from_time_range()
+        # устраняем дубликаты
+        self.response["domains"] = list(set( self.response["domains"] ))
 
-    try_to_get_time_range(from_, to, redis_instance, result)
+        return self.response
 
-    # устраняем дубликаты
-    result["domains"] = list(set( result["domains"] ))
-
-    return result
-
-
-def try_to_get_time_range(from_, to, redis_instance, result):
-    try:
-        for time_key in TimeRange(from_, to):
-            list_length = redis_instance.llen(time_key)
-            for i in range(list_length):
-                result["domains"].append( redis_instance.lindex(time_key, i) )
-    except WrongTimestampFormat as e:
-        result.update({"status": e.message})
+    def try_to_get_values_from_time_range(self):
+        try:
+            for time_key in TimeRange(self.from_, self.to):
+                list_length = self.redis_instance.llen(time_key)
+                for i in range(list_length):
+                    self.response["domains"].append( self.redis_instance.lindex(time_key, i) )
+        except WrongTimestampFormat as e:
+            self.response.update({
+                "status": "error",
+                "description": str(e),
+            })
 
 
 class TimeRange:

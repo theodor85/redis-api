@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.utils import timezone
 
-from .business_logic.links_saver import save_links
+from .business_logic.links_saver import LinksSaver
 
 
 redis_instance = redis.StrictRedis(
@@ -80,8 +80,9 @@ def test_save_links(api_client):
         "https://stackoverflow.com/questions/11828270/how-to-exit-the-vim-editor",        
     ]
     timestamp = datetime.datetime(2020, 4, 16, 12, 0, 0)
-    save_links(data, timestamp, redis_instance)
+    response = LinksSaver(data, timestamp, redis_instance).save()
 
+    assert response["status"] == "ok"
     check_saved_links_in_redis(timestamp)
     
     redis_instance.flushdb()

@@ -1,22 +1,57 @@
-'''  '''
+''' 
+    Модуль содержит класс LinksSaver, который извлекает домены из ссылок
+    и сохраняет в БД Redis.
+'''
 import re
+from datetime import datetime
 
 
-def save_links(links_list, timestamp, redis_instance):
-    exctract_domains(links_list)
-    remove_duplicates(links_list)
-    save_to_redis(links_list, timestamp, redis_instance)
+class LinksSaver:
+    '''
+    Пример использования:
+        links_saver = LinksSaver(data["links"], datetime.datetime.now(tz=tz), redis_instance)
+        response = links_saver.save()
+    
+    Возвращает словарь {"status": "ok"}, если нет ошибок. 
+    Если ошибки есть, {"status": "warning", description: "описание"} 
+    или {"status": "error", description: "описание"} 
+    '''
 
-def exctract_domains(links_list):
-    # TODO: Допустимые символы в url: цифры [0-9], латиница в нижнем регистре [a-z], 
-    # точка[.], слеш [/], дефис [-], нижнее подчеркивание [_]
-    pattern = r"[a-z]{2,}\.[a-z]{2,4}"
-    for index, link in enumerate(links_list):
-        links_list[index] = re.search(pattern, link).group(0)
+    def __init__(self, links_list, timestamp: datetime, redis_instance):
+        self.links_list = links_list
+        self.timestamp = timestamp
+        self.redis_instance = redis_instance
+        self.response = {"status": "ok"}
+    
+    def save(self):
+        self.exctract_domains()
+        self.remove_dublicates()
+        self.save_to_redis()
+        return self.response
+    
+    def exctract_domains(self):
+        pattern = r"[a-z0-9\-_]{2,}\.[a-z]{2,4}"
+        for index, link in enumerate(self.links_list):
+            try:
+                self.links_list[index] = re.search(pattern, link).group(0)
+            except AttributeError:
+                self.add_warning_about_bad_link(link)
 
-def remove_duplicates(links_list):
-    links_list = list(set(links_list))
+    def add_warning_about_bad_link(self, link):
+        msg = f"Warning! Link '{link}' has bad format and didn`t save to database! "
+        self.response["status"] == "warning"
+        if self.response["description"]:  
+            self.response["description"] += msg
+        else:
+            self.response["description"] = msg
 
-def save_to_redis(links_list, timestamp, redis_instance):
-    key = timestamp.isoformat().split('.')[0]
-    redis_instance.lpush(key, *links_list)
+    def remove_dublicates(self):
+        self.links_list = list(set(self.links_list))
+
+    def save_to_redis(self):
+        key = self.timestamp.isoformat().split('.')[0]
+        try:
+            self.redis_instance.lpush(key, *self.links_list)
+        except Exception as e:
+            self.response["status"] = "error"
+            self.response["description"] = f"{e}"
