@@ -2,3 +2,4 @@
 app/db.sqlite3
 htmlcov/
 app/.coverage
+answers.txt

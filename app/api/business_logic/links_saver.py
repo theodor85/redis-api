@@ -39,8 +39,8 @@ class LinksSaver:
 
     def add_warning_about_bad_link(self, link):
         msg = f"Warning! Link '{link}' has bad format and didn`t save to database! "
-        self.response["status"] == "warning"
-        if self.response["description"]:  
+        self.response["status"] = "warning"
+        if self.response.get("description"):
             self.response["description"] += msg
         else:
             self.response["description"] = msg

@@ -65,8 +65,6 @@ def visited_links(request, *args, **kwargs):
         )
         return Response(response, status=400)
 
-    if response["status"] == "error":
-        return Response(response, status=400)
     return Response(response, status=201)
 
 def try_to_load_json(request):

@@ -88,6 +88,48 @@ def test_save_links(api_client):
     redis_instance.flushdb()
 
 
+def test_save_bad_links(api_client):
+    redis_instance.flushdb()
+    data = [
+        "https://ya.ru",
+        "https://ya.ru?q=123",
+        "funboxru",
+        "https://stackoverflowcom/questions/11828270/how-to-exit-the-vim-editor",        
+    ]
+    timestamp = datetime.datetime(2020, 4, 16, 12, 0, 0)
+    response = LinksSaver(data, timestamp, redis_instance).save()
+
+    assert response["status"] == "warning"
+
+    redis_instance.flushdb()
+
+
+def test_send_bad_json(api_client):
+    send_bad_data("123", api_client)
+
+
+def send_bad_data(data, api_client):
+    url = reverse('api:visited_links')
+    tz = timezone.get_default_timezone()
+    request_time = datetime.datetime.now(tz=tz)
+    response = api_client.post(
+        url,
+        data=data,
+        content_type='application/json',
+    )
+
+    assert response.status_code == 400
+    assert response.json()["status"] == "error"    
+
+
+def test_send_no_links(api_client):
+    send_bad_data({"123": "123"}, api_client)
+
+
+def test_send_no_list_in_links(api_client):
+    send_bad_data({"links": "123"}, api_client)
+
+
 # ---------------------------------------------------------------------------
 # Testing "visited_domains" endpoint
 
@@ -124,3 +166,39 @@ def test_get_visited_domains(api_client):
     assert bool(xor_set) == False
 
     redis_instance.flushdb()
+
+def test_get_visited_domains_wrong_timestamp(api_client):
+    url = reverse('api:visited_domains')
+    response = api_client.get(url, {'from': '2020-04-17T12:44:01', 'to': '202ssssssT12:44:02'})
+
+    assert response.status_code == 400
+    assert response.json()["status"] == "error"
+
+
+def test_get_visited_domains_required_paremeter_is_absent(api_client):
+    url = reverse('api:visited_domains')
+    response = api_client.get(url, {'from': '2020-04-17T12:44:01'})
+
+    assert response.status_code == 400
+    assert response.json()["status"] == "error"
+
+
+# ---------------------------------------------------------------------------
+# Testing additional endpoints
+
+def test_clear(api_client):
+    redis_instance.lpush("123", "qwe", "asd")
+    url = reverse('api:clear')
+
+    api_client.get(url)
+
+    assert bool(redis_instance.keys("*")) == False
+
+
+def test_gets_all_item(api_client):
+    redis_instance.lpush("123", "qwe", "asd")
+    url = reverse('api:all_items')
+
+    response = api_client.get(url)
+
+    assert response.json()['count'] == 1
