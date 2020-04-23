@@ -104,11 +104,12 @@ def test_save_bad_links(api_client):
     redis_instance.flushdb()
 
 
-def test_send_bad_json(api_client):
-    send_bad_data("123", api_client)
-
-
-def send_bad_data(data, api_client):
+@pytest.mark.parametrize('data', [
+        "123",
+        {"123": "123"},
+        {"links": "123"},
+    ])
+def test_send_bad_json(data, api_client):
     url = reverse('api:visited_links')
     tz = timezone.get_default_timezone()
     request_time = datetime.datetime.now(tz=tz)
@@ -119,16 +120,8 @@ def send_bad_data(data, api_client):
     )
 
     assert response.status_code == 400
-    assert response.json()["status"] == "error"    
-
-
-def test_send_no_links(api_client):
-    send_bad_data({"123": "123"}, api_client)
-
-
-def test_send_no_list_in_links(api_client):
-    send_bad_data({"links": "123"}, api_client)
-
+    assert response.json()["status"] == "error" 
+ 
 
 # ---------------------------------------------------------------------------
 # Testing "visited_domains" endpoint
