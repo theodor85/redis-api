@@ -22,10 +22,5 @@ def test_wrong_time_format():
     from_ = "2020-04-16T11:39:40a"
     to    = "2020-04-16 T11:40:20"
 
-    try:
+    with pytest.raises(WrongTimestampFormat):
         check_list = list(TimeRange(from_, to))
-    except WrongTimestampFormat:
-        assert True
-        return
-
-    assert False 
