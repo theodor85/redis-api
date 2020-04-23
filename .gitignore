@@ -4,3 +4,4 @@ htmlcov/
 app/.coverage
 answers.txt
 TODO.txt
+pyexp

@@ -23,6 +23,13 @@ def api_client():
     return APIClient()
 
 
+@pytest.fixture
+def init_clear_db():
+    pass
+    yield
+    redis_instance.flushdb()
+
+
 def test_get_all(api_client):
     url = reverse('api:all_items')
     response = api_client.get(url)
@@ -33,8 +40,7 @@ def test_get_all(api_client):
 # Testing "visited_links" endpoint
 
 
-def test_post_links(api_client):
-    redis_instance.flushdb()
+def test_post_links(api_client, init_clear_db):
     
     url = reverse('api:visited_links')
     tz = timezone.get_default_timezone()
@@ -55,9 +61,6 @@ def test_post_links(api_client):
     assert response.status_code == 201
     check_saved_links_in_redis(request_time)
 
-    # очистка БД
-    redis_instance.flushdb()
-
 
 def check_saved_links_in_redis(timestamp):
     # достаём из Редиса данные
@@ -71,8 +74,7 @@ def check_saved_links_in_redis(timestamp):
         assert domain in ["ya.ru", "funbox.ru", "stackoverflow.com"]
 
 
-def test_save_links(api_client):
-    redis_instance.flushdb()
+def test_save_links(api_client, init_clear_db):
     data = [
         "https://ya.ru",
         "https://ya.ru?q=123",
@@ -84,12 +86,9 @@ def test_save_links(api_client):
 
     assert response["status"] == "ok"
     check_saved_links_in_redis(timestamp)
-    
-    redis_instance.flushdb()
 
 
-def test_save_bad_links(api_client):
-    redis_instance.flushdb()
+def test_save_bad_links(api_client, init_clear_db):
     data = [
         "https://ya.ru",
         "https://ya.ru?q=123",
@@ -101,15 +100,13 @@ def test_save_bad_links(api_client):
 
     assert response["status"] == "warning"
 
-    redis_instance.flushdb()
-
 
 @pytest.mark.parametrize('data', [
         "123",
         {"123": "123"},
         {"links": "123"},
     ])
-def test_send_bad_json(data, api_client):
+def test_send_bad_json(data, api_client, init_clear_db):
     url = reverse('api:visited_links')
     tz = timezone.get_default_timezone()
     request_time = datetime.datetime.now(tz=tz)
@@ -127,8 +124,7 @@ def test_send_bad_json(data, api_client):
 # Testing "visited_domains" endpoint
 
 
-def test_get_visited_domains(api_client):
-    redis_instance.flushdb()
+def test_get_visited_domains(api_client, init_clear_db):
     
     # первый тестовый список доменов
     timestamp1 = datetime.datetime(2020, 4, 16, 12, 0, 0)
@@ -158,7 +154,6 @@ def test_get_visited_domains(api_client):
     xor_set = set(domains) ^ set(["ya.ru","stackoverflow.com", "funbox.ru", "mail.ru"])
     assert bool(xor_set) == False
 
-    redis_instance.flushdb()
 
 def test_get_visited_domains_wrong_timestamp(api_client):
     url = reverse('api:visited_domains')
@@ -188,7 +183,7 @@ def test_clear(api_client):
     assert bool(redis_instance.keys("*")) == False
 
 
-def test_gets_all_item(api_client):
+def test_gets_all_item(api_client, init_clear_db):
     redis_instance.lpush("123", "qwe", "asd")
     url = reverse('api:all_items')
 
