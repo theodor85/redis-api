@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .business_logic.links_saver import LinksSaver
-from .business_logic.domain_getter import DomainGetter
+from .business_logic.domain_getter import DomainGetter, WrongTimestampFormat
 
 
 # Connect to our Redis instance
@@ -85,14 +85,16 @@ def visited_domains(request, *args, **kwargs):
     try:
         from_ = request.GET["from"]
         to = request.GET["to"]
+        response = DomainGetter(from_, to, redis_instance).get()
     except KeyError:
         response["status"] = "error"
         response["description"] = "Wrong request format! Request must be 'visited_domains/?from=2020-04-17T10:54:17&to=2020-04-17T10:55:58'"
         status = 400
         return Response(response, status=status)
-
-    response = DomainGetter(from_, to, redis_instance).get()
-
-    if response["status"] != "ok":
+    except WrongTimestampFormat:
+        response["status"] = "error"
+        response["description"] = str(WrongTimestampFormat)
         status = 400
+        return Response(response, status=status)        
+
     return Response(response, status=status)
