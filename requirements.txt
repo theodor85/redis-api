@@ -1,6 +1,6 @@
 # base
 django==2.2.12
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 redis==3.4.1
 
 # tests
