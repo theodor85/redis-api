@@ -1,5 +1,5 @@
 # base
-django==2.2.12
+django==2.2.27
 djangorestframework==3.11.0
 redis==3.4.1
 
